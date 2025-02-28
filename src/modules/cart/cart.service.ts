@@ -1,14 +1,32 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCartDto, UpdateCartDto } from './dto/cart.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class CartService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
-  async create(createCartDto: CreateCartDto) {
+  async create(token: string) {
+    const userId = this.getUserIdFromToken(token);
+    const existingCart = await this.prisma.cart.findUnique({
+      where: { userId: userId },
+      include: { items: true },
+    });
+
+    if (existingCart) {
+      return existingCart;
+    }
+
     return this.prisma.cart.create({
-      data: createCartDto,
+      data: { userId },
     });
   }
 
@@ -21,7 +39,13 @@ export class CartService {
   async findOne(id: string) {
     const cart = await this.prisma.cart.findUnique({
       where: { id },
-      include: { items: true },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
     });
     if (!cart) {
       throw new NotFoundException('Cart not found');
@@ -40,5 +64,14 @@ export class CartService {
     return this.prisma.cart.delete({
       where: { id },
     });
+  }
+
+  private getUserIdFromToken(token: string): string {
+    try {
+      const decoded = this.jwtService.decode(token);
+      return decoded.sub;
+    } catch (error) {
+      throw new UnauthorizedException('Token inválido');
+    }
   }
 }

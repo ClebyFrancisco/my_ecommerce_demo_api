@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Body, Req, Headers } from '@nestjs/common';
 import { AddressService } from './address.service';
 import { CreateAddressDto } from './dto/address.dto';
-import { Request } from 'express';
 
 @Controller('address')
 export class AddressController {

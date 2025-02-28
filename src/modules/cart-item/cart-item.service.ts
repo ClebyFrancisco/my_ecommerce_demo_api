@@ -30,9 +30,9 @@ export class CartItemService {
     });
   }
 
-  async remove(id: string) {
-    return this.prisma.cartItem.delete({
-      where: { id },
+  async remove(productId: string) {
+    return this.prisma.cartItem.deleteMany({
+      where: { productId },
     });
   }
 }
